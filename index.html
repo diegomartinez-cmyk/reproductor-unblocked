@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Reproductor</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      width: min(1000px, 94%);
+      margin: 25px auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .url-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    #youtubeUrl {
+      flex: 1;
+      padding: 14px;
+      border: 0;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 15px;
+      cursor: pointer;
+      background: white;
+      color: black;
+      font-weight: bold;
+    }
+
+    button:hover {
+      opacity: .85;
+    }
+
+    .video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: black;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    #player {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .ai {
+      margin-top: 18px;
+      background: #1d1d1d;
+      border-radius: 12px;
+      padding: 15px;
+    }
+
+    .ai h2 {
+      margin-top: 0;
+    }
+
+    #messages {
+      height: 250px;
+      overflow-y: auto;
+      background: #111;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .message {
+      padding: 9px 11px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      background: #333;
+    }
+
+    .bot {
+      background: #242424;
+    }
+
+    .ai-input {
+      display: flex;
+      gap: 10px;
+    }
+
+    #question {
+      flex: 1;
+      padding: 12px;
+      border: 0;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    @media (max-width: 600px) {
+      .url-box,
+      .ai-input {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>Mi Reproductor</h1>
+
+  <!-- ENLACE DE YOUTUBE -->
+  <div class="url-box">
+    <input
+      id="youtubeUrl"
+      type="text"
+      placeholder="Pega aquí el enlace de YouTube..."
+    >
+
+    <button onclick="loadVideo()">
+      ▶ Reproducir
+    </button>
+  </div>
+
+  <!-- PANTALLA DEL VÍDEO -->
+  <div class="video">
+    <iframe
+      id="player"
+      src=""
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen>
+    </iframe>
+  </div>
+
+  <!-- IA DEBAJO DEL VÍDEO -->
+  <div class="ai">
+
+    <h2>🤖 IA</h2>
+
+    <div id="messages">
+      <div class="message bot">
+        ¡Hola! Soy la IA del reproductor.
+      </div>
+    </div>
+
+    <div class="ai-input">
+
+      <input
+        id="question"
+        type="text"
+        placeholder="Escribe algo..."
+        onkeydown="if(event.key === 'Enter') askAI()"
+      >
+
+      <button onclick="askAI()">
+        Enviar
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+function getYouTubeId(url) {
+
+  try {
+
+    const parsed = new URL(url);
+
+    // youtu.be/XXXXXXXX
+    if (parsed.hostname.includes("youtu.be")) {
+      return parsed.pathname.substring(1);
+    }
+
+    // youtube.com/watch?v=XXXXXXXX
+    if (parsed.hostname.includes("youtube.com")) {
+
+      const videoId = parsed.searchParams.get("v");
+
+      if (videoId) {
+        return videoId;
+      }
+
+      // youtube.com/embed/XXXXXXXX
+      const parts = parsed.pathname.split("/");
+
+      const embedIndex = parts.indexOf("embed");
+
+      if (embedIndex !== -1 && parts[embedIndex + 1]) {
+        return parts[embedIndex + 1];
+      }
+    }
+
+  } catch (error) {
+    return null;
+  }
+
+  return null;
+}
+
+
+function loadVideo() {
+
+  const url =
+    document.getElementById("youtubeUrl").value.trim();
+
+  const id = getYouTubeId(url);
+
+  if (!id) {
+    alert("Ese enlace de YouTube no parece válido.");
+    return;
+  }
+
+  document.getElementById("player").src =
+    "https://www.youtube.com/embed/" +
+    encodeURIComponent(id);
+}
+
+
+function addMessage(text, type) {
+
+  const messages =
+    document.getElementById("messages");
+
+  const message =
+    document.createElement("div");
+
+  message.className =
+    "message " + type;
+
+  message.textContent = text;
+
+  messages.appendChild(message);
+
+  messages.scrollTop =
+    messages.scrollHeight;
+}
+
+
+async function askAI() {
+
+  const input =
+    document.getElementById("question");
+
+  const question =
+    input.value.trim();
+
+  if (!question) return;
+
+  addMessage(question, "user");
+
+  input.value = "";
+
+  addMessage("Pensando...", "bot");
+
+  try {
+
+    const response = await fetch("/api/ai", {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        message: question
+      })
+
+    });
+
+    const data =
+      await response.json();
+
+    const messages =
+      document.getElementById("messages");
+
+    messages.lastElementChild.remove();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Error de la IA"
+      );
+    }
+
+    addMessage(
+      data.answer,
+      "bot"
+    );
+
+  } catch (error) {
+
+    const messages =
+      document.getElementById("messages");
+
+    messages.lastElementChild.remove();
+
+    addMessage(
+      "No se ha podido conectar con la IA.",
+      "bot"
+    );
+
+    console.error(error);
+  }
+}
+
+</script>
+
+</body>
+</html>
